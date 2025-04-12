@@ -36,9 +36,9 @@ app.MapGet("/api/coupon/{id:int}", (int id) =>
     return Results.Ok(CouponStore.couponList.FirstOrDefault(u=>u.Id == id));
 }).WithName("GetCoupon").Produces<Coupon>(200);
 
-app.MapPost("/api/coupon", (IMapper _mapper, IValidator<CouponCreateDTO> _validation, [FromBody] CouponCreateDTO coupon_C_DTO) =>
+app.MapPost("/api/coupon", async (IMapper _mapper, IValidator<CouponCreateDTO> _validation, [FromBody] CouponCreateDTO coupon_C_DTO) =>
 {
-    var validationResult = _validation.ValidateAsync(coupon_C_DTO).GetAwaiter().GetResult();
+    var validationResult = await _validation.ValidateAsync(coupon_C_DTO);
     if (!validationResult.IsValid)
     {
         return Results.BadRequest(validationResult.Errors.FirstOrDefault().ToString());
