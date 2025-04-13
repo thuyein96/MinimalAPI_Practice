@@ -82,13 +82,52 @@ app.MapPost("/api/coupon", async (IMapper _mapper, IValidator<CouponCreateDTO> _
     //return Results.Created($"/api/coupon/{coupon.Id}", coupon);
 }).WithName("CreateCoupon").Accepts<CouponCreateDTO>("application/json").Produces<APIResponse>(201).Produces(400);
 
-app.MapPut("/api/coupon", () =>
+app.MapPut("/api/coupon", async (IMapper _mapper, IValidator<CouponUpdateDTO> _validation, [FromBody] CouponUpdateDTO coupon_U_DTO) =>
 {
-});
+    APIResponse response = new();
+    response.IsSuccess = false;
+    response.StatusCode = HttpStatusCode.BadRequest;
+
+    var validationResult = await _validation.ValidateAsync(coupon_U_DTO);
+    if (!validationResult.IsValid)
+    {
+        response.ErrorMessages.Add(validationResult.Errors.FirstOrDefault().ToString());
+        return Results.BadRequest(response);
+    }
+
+    Coupon coupon = CouponStore.couponList.Where(u => u.Id == coupon_U_DTO.Id).FirstOrDefault();
+    if (coupon == null)
+    {
+        response.ErrorMessages.Add("Coupon not found");
+        return Results.BadRequest(response);
+    }
+
+    coupon.IsActive = coupon_U_DTO.IsActive;
+    coupon.Name = coupon_U_DTO.Name;
+    coupon.Percent = coupon_U_DTO.Percent;
+    coupon.LastUpdated = DateTime.Now;
+
+    response.Result = _mapper.Map<CouponDTO>(coupon);
+    response.IsSuccess = true;
+    response.StatusCode = HttpStatusCode.OK;
+    return Results.Ok(response);
+}).WithName("UpdateCoupon").Accepts<CouponUpdateDTO>("application/json").Produces<APIResponse>(200).Produces(400); ;
 
 app.MapDelete("/api/coupon/{id:int}", (int id) =>
 {
-});
+    APIResponse response = new();
+    Coupon coupon = CouponStore.couponList.FirstOrDefault(u => u.Id == id);
+    if (coupon == null)
+    {
+        response.ErrorMessages.Add("Coupon not found");
+        return Results.BadRequest(response);
+    }
+    CouponStore.couponList.Remove(coupon);
+
+    response.IsSuccess = true;
+    response.StatusCode = HttpStatusCode.NoContent;
+    return Results.Ok(response);
+}).WithName("DeleteCoupon").Produces<APIResponse>(200);
 
 app.UseHttpsRedirection();
 
